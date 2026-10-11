@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { ShoppingCart, Check, X, RotateCcw, AlertTriangle, TrendingUp, Wallet, Calendar, HeartPulse } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { formatINR, formatDay, uid } from '@/lib/format';
 import { simulateExpense, computeMetrics, canAfford, explainImpact } from '@/lib/finance';
 import { PRESETS, CATEGORY_LABELS } from '@/lib/defaultData';
@@ -93,6 +93,7 @@ export function SpendSimulator() {
       setFeedback({ type: 'error', msg: 'Purchase already applied. Cancel only discards unapplied previews.' });
       return;
     }
+    handleReset();
     setFeedback({ type: 'success', msg: 'Scenario discarded. No changes to your finances.' });
   };
 
@@ -109,7 +110,7 @@ export function SpendSimulator() {
     { label: 'Available Cash', before: metrics.availableCash, after: hypoMetrics.availableCash, icon: <Wallet size={14} /> },
     { label: 'Daily Safe-to-Spend', before: metrics.dailySafeToSpend, after: hypoMetrics.dailySafeToSpend, icon: <TrendingUp size={14} /> },
     { label: 'Projected Day-30', before: metrics.projectedDay30, after: hypoMetrics.projectedDay30, icon: <Calendar size={14} /> },
-    { label: 'Health Score', before: metrics.health.total, after: hypoMetrics.health.total, icon: <HeartPulse size={14} /> },
+    { label: 'Health Score', before: metrics.health.total, after: hypoMetrics.health.total, icon: <HeartPulse size={14} />, isScore: true },
   ];
 
   const savingsFeasible = hypoMetrics.projectedDay30 >= 0;
@@ -208,16 +209,17 @@ export function SpendSimulator() {
               const delta = c.after - c.before;
               const isNegative = delta < 0;
               const isNeutral = delta === 0;
+              const formatVal = (v: number) => c.isScore ? `${v}/100` : formatINR(v);
               return (
                 <div key={c.label} className="flex items-center justify-between py-2 border-b border-slate-700/40 last:border-0">
                   <div className="flex items-center gap-2 text-slate-400 text-sm">
                     {c.icon} {c.label}
                   </div>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="text-slate-500">{formatINR(c.before)}</span>
+                    <span className="text-slate-500">{formatVal(c.before)}</span>
                     <span className="text-slate-600">→</span>
                     <span className={`font-semibold ${isNegative ? 'text-amber-400' : isNeutral ? 'text-slate-300' : 'text-lime-300'}`}>
-                      {formatINR(c.after)}
+                      {formatVal(c.after)}
                     </span>
                   </div>
                 </div>

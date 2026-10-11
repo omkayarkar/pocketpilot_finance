@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ShieldCheck, AlertTriangle, HeartPulse, RotateCcw } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { formatINR } from '@/lib/format';
 import { Card, Badge, Button, ProgressBar, Modal } from '@/components/ui';
 

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { formatINR, formatDay } from '@/lib/format';
 import { CATEGORY_LABELS } from '@/lib/defaultData';
 import { Card, Button, Badge, Input, Select, Modal, EmptyState } from '@/components/ui';
@@ -42,20 +42,21 @@ export function Transactions() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
+            aria-label="Search transactions"
             placeholder="Search transactions..."
             className="w-full bg-slate-900/60 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400"
           />
         </div>
-        <Select value={filterType} onChange={e => setFilterType(e.target.value as 'all' | 'income' | 'expense')}>
+        <Select aria-label="Filter by transaction type" value={filterType} onChange={e => setFilterType(e.target.value as 'all' | 'income' | 'expense')}>
           <option value="all">All Types</option>
           <option value="income">Income</option>
           <option value="expense">Expense</option>
         </Select>
-        <Select value={filterCat} onChange={e => setFilterCat(e.target.value as 'all' | Category)}>
+        <Select aria-label="Filter by category" value={filterCat} onChange={e => setFilterCat(e.target.value as 'all' | Category)}>
           <option value="all">All Categories</option>
           {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
             <option key={key} value={key}>{label}</option>
@@ -94,10 +95,18 @@ export function Transactions() {
                     {t.type === 'income' ? '+' : '-'}{formatINR(t.amount)}
                   </span>
                   <div className="flex gap-1">
-                    <button onClick={() => setEditing(t)} className="p-1.5 text-slate-400 hover:text-lime-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400">
+                    <button
+                      onClick={() => setEditing(t)}
+                      aria-label={`Edit ${t.description}`}
+                      className="p-1.5 text-slate-400 hover:text-lime-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400"
+                    >
                       <Pencil size={14} />
                     </button>
-                    <button onClick={() => setDeleteId(t.id)} className="p-1.5 text-slate-400 hover:text-red-400 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                    <button
+                      onClick={() => setDeleteId(t.id)}
+                      aria-label={`Delete ${t.description}`}
+                      className="p-1.5 text-slate-400 hover:text-red-400 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                    >
                       <Trash2 size={14} />
                     </button>
                   </div>

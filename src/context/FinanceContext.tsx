@@ -1,11 +1,11 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useMemo, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { FinanceState, Transaction, SavingsGoal, RecurringPayment } from '@/types';
 import { createDefaultState } from '@/lib/defaultData';
 import { loadState, saveState, clearState } from '@/lib/storage';
-import { computeMetrics, advanceDays, getAvailableCash } from '@/lib/finance';
+import { computeMetrics, advanceDays, getAvailableCash, getProjectedDay30, simulateExpense } from '@/lib/finance';
 import { uid } from '@/lib/format';
 
-interface FinanceContextValue {
+export interface FinanceContextValue {
   state: FinanceState;
   metrics: ReturnType<typeof computeMetrics>;
   addTransaction: (txn: Omit<Transaction, 'id'> & { id?: string }) => { ok: boolean; error?: string };
@@ -22,7 +22,7 @@ interface FinanceContextValue {
   resetAll: () => void;
 }
 
-const FinanceContext = createContext<FinanceContextValue | null>(null);
+export const FinanceContext = createContext<FinanceContextValue | null>(null);
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<FinanceState>(() => {
@@ -34,7 +34,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     saveState(state);
   }, [state]);
 
-  const metrics = computeMetrics(state);
+  const metrics = useMemo(() => computeMetrics(state), [state]);
 
   const addTransaction = useCallback((txn: Omit<Transaction, 'id'> & { id?: string }): { ok: boolean; error?: string } => {
     if (txn.amount <= 0) return { ok: false, error: 'Amount must be positive' };
@@ -46,6 +46,15 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       const cash = getAvailableCash(state);
       if (txn.day <= state.currentDay && txn.amount > cash) {
         return { ok: false, error: 'Insufficient cash for this expense' };
+      }
+      const hypothetical = simulateExpense(state, {
+        amount: txn.amount,
+        category: txn.category,
+        description: txn.description,
+        day: txn.day,
+      });
+      if (getProjectedDay30(hypothetical) < 0) {
+        return { ok: false, error: 'This expense causes a projected deficit by Day 30' };
       }
     }
     setState(prev => {
@@ -83,13 +92,18 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const contributeGoal = useCallback((goalId: string, amount: number): { ok: boolean; error?: string } => {
     if (amount <= 0) return { ok: false, error: 'Amount must be positive' };
+    const goal = state.goals.find(g => g.id === goalId);
+    if (!goal) return { ok: false, error: 'Goal not found' };
+    const remaining = Math.max(0, goal.target - goal.saved);
+    if (remaining <= 0) return { ok: false, error: 'Goal is already fully funded' };
+    if (amount > remaining) return { ok: false, error: `Amount exceeds remaining goal target (\u20B9${remaining.toLocaleString('en-IN')})` };
     const cash = getAvailableCash(state);
     if (amount > cash) return { ok: false, error: 'Insufficient cash to contribute' };
     setState(prev => ({
       ...prev,
       goals: prev.goals.map(g => {
         if (g.id === goalId) {
-          return { ...g, saved: Math.min(g.target, g.saved + amount) };
+          return { ...g, saved: g.saved + amount };
         }
         return g;
       }),
@@ -159,8 +173,4 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useFinance(): FinanceContextValue {
-  const ctx = useContext(FinanceContext);
-  if (!ctx) throw new Error('useFinance must be used within FinanceProvider');
-  return ctx;
-}
+

@@ -189,14 +189,14 @@ export function getHealthBreakdown(state: FinanceState): HealthBreakdown {
 
   // Commitment coverage: can cash cover upcoming expenses?
   const coverageRatio = upcomingExpenses > 0 ? Math.min(1, cash / upcomingExpenses) : 1;
-  const commitmentCoverage = Math.round(coverageRatio * 100);
+  const commitmentCoverage = Math.max(0, Math.min(100, Math.round(coverageRatio * 100)));
 
-  const total = Math.round(
+  const total = Math.max(0, Math.min(100, Math.round(
     budgetSustainability * 0.35 +
     emergencyResilience * 0.25 +
     savingsFeasibility * 0.20 +
     commitmentCoverage * 0.20
-  );
+  )));
 
   const band: 'Healthy' | 'Caution' | 'Critical' = total >= 75 ? 'Healthy' : total >= 45 ? 'Caution' : 'Critical';
 
@@ -228,37 +228,34 @@ export function computeMetrics(state: FinanceState): Metrics {
  */
 export function getCashFlowSeries(state: FinanceState): { day: number; balance: number }[] {
   const series: { day: number; balance: number }[] = [];
-  let balance = state.startingFunds;
-  let savingsSoFar = 0;
+  // Initial liquid balance on day 1 equals starting funds minus already-saved goal funds
+  let balance = state.startingFunds - sumBy(state.goals, g => g.saved);
 
   for (let day = 1; day <= state.totalDays; day++) {
-    // Process income
+    // Process income on this day
     for (const t of state.transactions) {
       if (t.type === 'income' && t.day === day) {
         balance += t.amount;
       }
     }
-    // Process expenses
+    // Process expenses on this day
     for (const t of state.transactions) {
       if (t.type === 'expense' && t.day === day) {
         balance -= t.amount;
       }
     }
-    // Process recurring
+    // Process recurring payments due on this day (if not already processed prior)
     for (const r of state.recurring) {
       if (!r.paused && r.dueDay === day && !r.processedDays.includes(day)) {
         balance -= r.amount;
       }
     }
-    // Process savings allocations at due day (if not already saved)
+    // Process remaining savings allocations at due day for each goal
     for (const g of state.goals) {
-      if (g.dueDay === day) {
-        const remaining = g.target - g.saved;
+      if (!g.paused && g.dueDay === day) {
+        const remaining = Math.max(0, g.target - g.saved);
         if (remaining > 0) {
-          // Only allocate what we've saved so far progressively
-          // For chart, we deduct the goal at its due day
-          balance -= Math.max(0, g.target - savingsSoFar);
-          savingsSoFar += Math.max(0, g.target - savingsSoFar);
+          balance -= remaining;
         }
       }
     }
@@ -302,21 +299,23 @@ export function canAfford(state: FinanceState, amount: number, day: number): { a
     if (amount > cash) {
       return { affordable: false, reason: `Insufficient cash. Available: \u20B9${cash.toLocaleString('en-IN')}, needed: \u20B9${amount.toLocaleString('en-IN')}` };
     }
-  } else {
-    // Future expense: check projected balance after
-    const projected = getProjectedDay30(state);
-    if (amount > projected + amount) {
-      // If subtracting this would make projected negative
-      const newProjected = projected - amount;
-      if (newProjected < 0) {
-        return { affordable: false, reason: `This would make projected Day-30 balance negative (\u20B9${newProjected.toLocaleString('en-IN')})` };
-      }
-    }
-    const newProjected = getProjectedDay30({ ...state, transactions: [...state.transactions, { id: 'temp', type: 'expense', amount, category: 'other', description: 'temp', day }] });
-    if (newProjected < 0) {
-      return { affordable: false, reason: `This would make projected Day-30 balance negative (\u20B9${newProjected.toLocaleString('en-IN')})` };
-    }
   }
+
+  // Check whether applying this expense makes Day-30 projection negative
+  const hypothetical = simulateExpense(state, {
+    amount,
+    category: 'other',
+    description: 'check',
+    day,
+  });
+  const projectedAfter = getProjectedDay30(hypothetical);
+  if (projectedAfter < 0) {
+    return {
+      affordable: false,
+      reason: `This would make projected Day-30 balance negative (\u20B9${projectedAfter.toLocaleString('en-IN')})`,
+    };
+  }
+
   return { affordable: true };
 }
 

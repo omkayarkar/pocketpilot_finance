@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Target, Plus, ArrowDownToLine, ArrowUpFromLine, Check } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { formatINR, formatDay } from '@/lib/format';
 import { Card, Button, Badge, ProgressBar, Input, Modal, EmptyState } from '@/components/ui';
 import type { SavingsGoal } from '@/types';

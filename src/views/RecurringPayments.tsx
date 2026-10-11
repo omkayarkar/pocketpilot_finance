@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Repeat, Plus, Pause, Play, Pencil, Trash2, FastForward, AlertTriangle, Check } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { formatINR, formatDay } from '@/lib/format';
 import { CATEGORY_LABELS } from '@/lib/defaultData';
 import { Card, Button, Badge, Input, Select, Modal, EmptyState } from '@/components/ui';
@@ -103,13 +103,26 @@ export function RecurringPayments() {
                     ) : null}
 
                     <div className="flex gap-1">
-                      <button onClick={() => toggleRecurringPause(r.id)} className="p-1.5 text-slate-400 hover:text-lime-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400" title={r.paused ? 'Resume' : 'Pause'}>
+                      <button
+                        onClick={() => toggleRecurringPause(r.id)}
+                        aria-label={r.paused ? `Resume ${r.name}` : `Pause ${r.name}`}
+                        className="p-1.5 text-slate-400 hover:text-lime-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400"
+                        title={r.paused ? 'Resume' : 'Pause'}
+                      >
                         {r.paused ? <Play size={14} /> : <Pause size={14} />}
                       </button>
-                      <button onClick={() => setEditing(r)} className="p-1.5 text-slate-400 hover:text-lime-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400">
+                      <button
+                        onClick={() => setEditing(r)}
+                        aria-label={`Edit ${r.name}`}
+                        className="p-1.5 text-slate-400 hover:text-lime-300 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400"
+                      >
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => setDeleteId(r.id)} className="p-1.5 text-slate-400 hover:text-red-400 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400">
+                      <button
+                        onClick={() => setDeleteId(r.id)}
+                        aria-label={`Delete ${r.name}`}
+                        className="p-1.5 text-slate-400 hover:text-red-400 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      >
                         <Trash2 size={14} />
                       </button>
                     </div>

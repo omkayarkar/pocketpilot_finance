@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import { CATEGORY_LABELS } from '@/lib/defaultData';
 import type { Category, TxnType } from '@/types';

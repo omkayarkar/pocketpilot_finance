@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FinanceProvider, useFinance } from '@/context/FinanceContext';
+import { FinanceProvider } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { Layout, type ViewId } from '@/components/Layout';
 import { Overview } from '@/views/Overview';
 import { SpendSimulator } from '@/views/SpendSimulator';

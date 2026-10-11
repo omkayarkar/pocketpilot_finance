@@ -39,7 +39,7 @@ export function Layout({ current, onNavigate, children, currentDay, totalDays }:
       </div>
 
       {/* Sidebar / Nav */}
-      <nav className="md:w-60 md:min-h-screen border-r border-slate-800 bg-slate-950/30 md:flex md:flex-col">
+      <nav aria-label="Main navigation" className="md:w-60 md:min-h-screen border-r border-slate-800 bg-slate-950/30 md:flex md:flex-col">
         <div className="hidden md:flex items-center gap-2 px-5 py-5 border-b border-slate-800">
           <Wallet size={22} className="text-lime-400" />
           <div>
@@ -52,6 +52,7 @@ export function Layout({ current, onNavigate, children, currentDay, totalDays }:
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
+              aria-current={current === item.id ? 'page' : undefined}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 ${
                 current === item.id
                   ? 'bg-lime-400/10 text-lime-300 border border-lime-400/20'

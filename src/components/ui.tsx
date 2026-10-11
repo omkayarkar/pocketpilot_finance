@@ -1,4 +1,4 @@
-import type { ReactNode, ButtonHTMLAttributes } from 'react';
+import { useId, useEffect, type ReactNode, type ButtonHTMLAttributes } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'warning' | 'outline';
 type Size = 'sm' | 'md' | 'lg';
@@ -64,14 +64,27 @@ export function Badge({ children, variant = 'slate' }: { children: ReactNode; va
 }
 
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div className="relative bg-slate-800 border border-slate-700 rounded-xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-700">
-          <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 rounded">
+          <h3 id={titleId} className="text-lg font-semibold text-white">{title}</h3>
+          <button onClick={onClose} aria-label="Close dialog" className="text-slate-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 rounded">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -83,24 +96,35 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   );
 }
 
-export function Input({ label, error, ...props }: { label?: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ label, error, id, ...props }: { label?: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const generatedId = useId();
+  const inputId = id || (label ? generatedId : undefined);
+  const errorId = error && inputId ? `${inputId}-error` : undefined;
+
   return (
     <div className="flex flex-col gap-1">
-      {label && <label className="text-xs font-medium text-slate-400">{label}</label>}
+      {label && <label htmlFor={inputId} className="text-xs font-medium text-slate-400">{label}</label>}
       <input
+        id={inputId}
+        aria-invalid={error ? 'true' : undefined}
+        aria-describedby={errorId}
         className={`bg-slate-900/60 border rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus:border-lime-400 transition-colors ${error ? 'border-red-500/50' : 'border-slate-700'}`}
         {...props}
       />
-      {error && <span className="text-xs text-red-400">{error}</span>}
+      {error && <span id={errorId} className="text-xs text-red-400">{error}</span>}
     </div>
   );
 }
 
-export function Select({ label, children, ...props }: { label?: string; children: ReactNode } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+export function Select({ label, id, children, ...props }: { label?: string; children: ReactNode } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  const generatedId = useId();
+  const selectId = id || (label ? generatedId : undefined);
+
   return (
     <div className="flex flex-col gap-1">
-      {label && <label className="text-xs font-medium text-slate-400">{label}</label>}
+      {label && <label htmlFor={selectId} className="text-xs font-medium text-slate-400">{label}</label>}
       <select
+        id={selectId}
         className="bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 focus:border-lime-400 transition-colors"
         {...props}
       >
@@ -110,12 +134,20 @@ export function Select({ label, children, ...props }: { label?: string; children
   );
 }
 
-export function ProgressBar({ value, className = '' }: { value: number; className?: string }) {
+export function ProgressBar({ value, label, className = '' }: { value: number; label?: string; className?: string }) {
+  const clamped = Math.min(100, Math.max(0, value));
   return (
-    <div className={`h-2 bg-slate-700/50 rounded-full overflow-hidden ${className}`}>
+    <div
+      role="progressbar"
+      aria-valuenow={Math.round(clamped)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={label || 'Progress'}
+      className={`h-2 bg-slate-700/50 rounded-full overflow-hidden ${className}`}
+    >
       <div
         className="h-full bg-lime-400 rounded-full transition-all duration-300"
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        style={{ width: `${clamped}%` }}
       />
     </div>
   );

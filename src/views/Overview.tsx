@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ShoppingCart, Plus, TrendingUp, TrendingDown, Wallet, ShieldCheck, AlertTriangle, Calendar } from 'lucide-react';
-import { useFinance } from '@/context/FinanceContext';
+import { useFinance } from '@/context/useFinance';
 import { formatINR, formatDay } from '@/lib/format';
 import { getCashFlowSeries } from '@/lib/finance';
 import { CATEGORY_LABELS } from '@/lib/defaultData';
@@ -12,7 +12,7 @@ import { AddTransactionModal } from '@/components/AddTransactionModal';
 export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const { state, metrics } = useFinance();
   const [showAddTxn, setShowAddTxn] = useState(false);
-  const cashFlow = getCashFlowSeries(state);
+  const cashFlow = useMemo(() => getCashFlowSeries(state), [state]);
 
   const healthColor = metrics.health.band === 'Healthy' ? 'lime' : metrics.health.band === 'Caution' ? 'amber' : 'red';
   const healthIcon = metrics.health.band === 'Healthy' ? <ShieldCheck size={16} /> : <AlertTriangle size={16} />;
@@ -116,7 +116,9 @@ export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                     <div className="text-slate-200">{c.name}</div>
                     <div className="text-xs text-slate-500">{formatDay(c.day)}</div>
                   </div>
-                  <span className={c.amount < 0 ? 'text-lime-400' : 'text-slate-300'}>{formatINR(c.amount)}</span>
+                  <span className={c.amount < 0 ? 'text-lime-400' : 'text-slate-300'}>
+                    {c.amount < 0 ? `+${formatINR(Math.abs(c.amount))}` : formatINR(c.amount)}
+                  </span>
                 </div>
               ))}
             </div>

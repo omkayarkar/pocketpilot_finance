@@ -1,12 +1,11 @@
 import type { FinanceState, Transaction, Metrics, HealthBreakdown, RecurringPayment } from '@/types';
+import { uid } from './format.ts';
 
-export function sum<T>(arr: T[], fn: (item: T) => number): number {
-  return arr.reduce((acc, item) => acc + fn(item), 0);
-}
-
-function sumBy<T>(arr: T[], fn: (item: T) => number): number {
+export function sumBy<T>(arr: T[], fn: (item: T) => number): number {
   return arr.reduce((a, x) => a + fn(x), 0);
 }
+
+export const sum = sumBy;
 
 /**
  * Available cash = starting funds + received income − paid expenses − savings allocated
@@ -76,8 +75,8 @@ export function getUpcomingCommitments(state: FinanceState): { name: string; amo
  * Projected Day-30 balance:
  * Start from current available cash, then add future income, subtract future recurring payments and goal allocations
  */
-export function getProjectedDay30(state: FinanceState): number {
-  let balance = getAvailableCash(state);
+export function getProjectedDay30(state: FinanceState, precomputedCash?: number): number {
+  let balance = precomputedCash !== undefined ? precomputedCash : getAvailableCash(state);
 
   // Future income
   for (const t of state.transactions) {
@@ -118,11 +117,14 @@ export function getProjectedDay30(state: FinanceState): number {
  * Available discretionary funds divided by remaining planning days.
  * Discretionary funds = Available cash + future income - upcoming commitments (reserved exactly once) - emergency buffer.
  */
-export function getDailySafeToSpend(state: FinanceState): number {
-  const cash = getAvailableCash(state);
+export function getDailySafeToSpend(
+  state: FinanceState,
+  precomputed?: { cash?: number; upcoming?: { name: string; amount: number; day: number }[] }
+): number {
+  const cash = precomputed?.cash !== undefined ? precomputed.cash : getAvailableCash(state);
 
   // Upcoming commitments total (only positive amounts = expenses/obligations)
-  const upcoming = getUpcomingCommitments(state);
+  const upcoming = precomputed?.upcoming !== undefined ? precomputed.upcoming : getUpcomingCommitments(state);
   const upcomingExpenses = upcoming.filter(c => c.amount > 0).reduce((a, c) => a + c.amount, 0);
 
   // Future income to look forward to
@@ -165,15 +167,26 @@ export function getSavingsProgress(state: FinanceState) {
  * - Savings feasibility (20%): progress toward savings goals
  * - Commitment coverage (20%): can we cover upcoming commitments?
  */
-export function getHealthBreakdown(state: FinanceState): HealthBreakdown {
-  const cash = getAvailableCash(state);
-  const totalSpent = getTotalSpent(state);
-  const projected = getProjectedDay30(state);
-  const upcoming = getUpcomingCommitments(state);
-  const upcomingExpenses = upcoming.filter(c => c.amount > 0).reduce((a, c) => a + c.amount, 0);
+export function getHealthBreakdown(
+  state: FinanceState,
+  precomputed?: {
+    cash?: number;
+    totalSpent?: number;
+    totalIncome?: number;
+    projected?: number;
+    upcomingExpenses?: number;
+  }
+): HealthBreakdown {
+  const cash = precomputed?.cash !== undefined ? precomputed.cash : getAvailableCash(state);
+  const totalSpent = precomputed?.totalSpent !== undefined ? precomputed.totalSpent : getTotalSpent(state);
+  const projected = precomputed?.projected !== undefined ? precomputed.projected : getProjectedDay30(state, cash);
+  const upcomingExpenses = precomputed?.upcomingExpenses !== undefined
+    ? precomputed.upcomingExpenses
+    : getUpcomingCommitments(state).filter(c => c.amount > 0).reduce((a, c) => a + c.amount, 0);
+  const realizedIncome = precomputed?.totalIncome !== undefined ? precomputed.totalIncome : getTotalIncome(state);
 
   // Budget sustainability: lower spend ratio = healthier
-  const totalBudget = state.startingFunds + getTotalIncome(state);
+  const totalBudget = state.startingFunds + realizedIncome;
   const spendRatio = totalBudget > 0 ? totalSpent / totalBudget : 1;
   const budgetSustainability = Math.max(0, Math.min(100, Math.round((1 - spendRatio) * 100)));
 
@@ -207,16 +220,32 @@ export function getHealthBreakdown(state: FinanceState): HealthBreakdown {
  * Compute all metrics from state
  */
 export function computeMetrics(state: FinanceState): Metrics {
+  const availableCash = getAvailableCash(state);
+  const totalSpent = getTotalSpent(state);
+  const totalIncome = getTotalIncome(state);
+  const upcomingCommitments = getUpcomingCommitments(state);
+  const upcomingExpenses = upcomingCommitments.filter(c => c.amount > 0).reduce((a, c) => a + c.amount, 0);
+  const projectedDay30 = getProjectedDay30(state, availableCash);
+  const dailySafeToSpend = getDailySafeToSpend(state, { cash: availableCash, upcoming: upcomingCommitments });
+  const savingsProgress = getSavingsProgress(state);
+  const health = getHealthBreakdown(state, {
+    cash: availableCash,
+    totalSpent,
+    totalIncome,
+    projected: projectedDay30,
+    upcomingExpenses,
+  });
+
   return {
-    availableCash: getAvailableCash(state),
-    totalSpent: getTotalSpent(state),
-    totalIncome: getTotalIncome(state),
+    availableCash,
+    totalSpent,
+    totalIncome,
     totalSaved: sumBy(state.goals, g => g.saved),
-    dailySafeToSpend: getDailySafeToSpend(state),
-    projectedDay30: getProjectedDay30(state),
-    upcomingCommitments: getUpcomingCommitments(state),
-    savingsProgress: getSavingsProgress(state),
-    health: getHealthBreakdown(state),
+    dailySafeToSpend,
+    projectedDay30,
+    upcomingCommitments,
+    savingsProgress,
+    health,
     recentTransactions: [...state.transactions]
       .sort((a, b) => b.day - a.day)
       .slice(0, 5),
@@ -399,7 +428,7 @@ export function advanceDays(state: FinanceState, days: number): FinanceState {
       if (r.dueDay <= newDay && !processedDays.includes(r.dueDay)) {
         // Process this payment
         newTransactions.push({
-          id: Math.random().toString(36).slice(2) + Date.now().toString(36),
+          id: uid(),
           type: 'expense',
           amount: r.amount,
           category: r.category,

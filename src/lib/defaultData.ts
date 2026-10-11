@@ -1,5 +1,5 @@
 import type { FinanceState } from '@/types';
-import { uid } from './format';
+import { uid } from './format.ts';
 
 export function createDefaultState(): FinanceState {
   const goalId = uid();
@@ -45,18 +45,4 @@ export const CATEGORY_LABELS: Record<string, string> = {
   social: 'Social',
   emergency: 'Emergency',
   other: 'Other',
-};
-
-export const CATEGORY_ICONS: Record<string, string> = {
-  food: 'Utensils',
-  transport: 'Bus',
-  shopping: 'ShoppingBag',
-  entertainment: 'Music',
-  subscription: 'Repeat',
-  recharge: 'Smartphone',
-  education: 'GraduationCap',
-  health: 'HeartPulse',
-  social: 'Users',
-  emergency: 'Siren',
-  other: 'Circle',
 };

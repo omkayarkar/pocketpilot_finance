@@ -244,3 +244,45 @@ test('getCashFlowSeries matches Available Cash and Projected Day 30 across simul
   assert.equal(series[29].balance, getProjectedDay30(advanced));
 });
 
+test('computeMetrics produces identical results to standalone functions with optimized execution', () => {
+  const state = createMockState();
+  const metrics = computeMetrics(state);
+
+  assert.equal(metrics.availableCash, getAvailableCash(state));
+  assert.equal(metrics.totalSpent, getTotalSpent(state));
+  assert.equal(metrics.totalIncome, getTotalIncome(state));
+  assert.equal(metrics.projectedDay30, getProjectedDay30(state));
+  assert.equal(metrics.dailySafeToSpend, getDailySafeToSpend(state));
+  assert.deepEqual(metrics.health, getHealthBreakdown(state));
+  assert.deepEqual(metrics.upcomingCommitments, getUpcomingCommitments(state));
+});
+
+test('paused recurring payments and goals are excluded from upcoming commitments and projections', () => {
+  const state = createMockState();
+  const baselineProj = getProjectedDay30(state);
+
+  // Pause recurring payment (music: 299)
+  state.recurring[0].paused = true;
+  // Balance should improve by 299 because music is no longer committed
+  assert.equal(getProjectedDay30(state), baselineProj + 299);
+
+  const commitments = getUpcomingCommitments(state);
+  assert.equal(commitments.some(c => c.name === 'Music Subscription'), false);
+
+  // Pause goal (headphones: 2500 remaining)
+  state.goals[0].paused = true;
+  // Balance should improve by remaining 2500
+  assert.equal(getProjectedDay30(state), baselineProj + 299 + 2500);
+  const commitmentsWithoutGoal = getUpcomingCommitments(state);
+  assert.equal(commitmentsWithoutGoal.some(c => c.name.includes('Headphones')), false);
+});
+
+test('canAfford enforces liquid cash for immediate purchases even if future income would cover Day 30', () => {
+  const state = createMockState();
+  // Available cash is 9330. Part-time freelance (+5000) arrives on Day 10.
+  // A Day 1 purchase of 9500 exceeds available cash (9330), even though Day 30 balance would be 11032 - 9500 = +1532.
+  const result = canAfford(state, 9500, 1);
+  assert.equal(result.affordable, false);
+  assert.match(result.reason ?? '', /Insufficient cash/);
+});
+

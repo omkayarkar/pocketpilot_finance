@@ -2,7 +2,7 @@ import { createContext, useMemo, useState, useEffect, useCallback, type ReactNod
 import type { FinanceState, Transaction, SavingsGoal, RecurringPayment } from '@/types';
 import { createDefaultState } from '@/lib/defaultData';
 import { loadState, saveState, clearState } from '@/lib/storage';
-import { computeMetrics, advanceDays, getAvailableCash, getProjectedDay30, simulateExpense } from '@/lib/finance';
+import { computeMetrics, advanceDays, getAvailableCash, canAfford } from '@/lib/finance';
 import { uid } from '@/lib/format';
 
 export interface FinanceContextValue {
@@ -43,18 +43,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       return { ok: false, error: 'Transaction already applied' };
     }
     if (txn.type === 'expense') {
-      const cash = getAvailableCash(state);
-      if (txn.day <= state.currentDay && txn.amount > cash) {
-        return { ok: false, error: 'Insufficient cash for this expense' };
-      }
-      const hypothetical = simulateExpense(state, {
-        amount: txn.amount,
-        category: txn.category,
-        description: txn.description,
-        day: txn.day,
-      });
-      if (getProjectedDay30(hypothetical) < 0) {
-        return { ok: false, error: 'This expense causes a projected deficit by Day 30' };
+      const affordResult = canAfford(state, txn.amount, txn.day);
+      if (!affordResult.affordable) {
+        return { ok: false, error: affordResult.reason || 'This expense cannot be afforded' };
       }
     }
     setState(prev => {
@@ -162,12 +153,40 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     setState(createDefaultState());
   }, []);
 
+  const contextValue = useMemo<FinanceContextValue>(() => ({
+    state,
+    metrics,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addGoal,
+    contributeGoal,
+    withdrawGoal,
+    addRecurring,
+    updateRecurring,
+    deleteRecurring,
+    toggleRecurringPause,
+    advanceSim,
+    resetAll,
+  }), [
+    state,
+    metrics,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addGoal,
+    contributeGoal,
+    withdrawGoal,
+    addRecurring,
+    updateRecurring,
+    deleteRecurring,
+    toggleRecurringPause,
+    advanceSim,
+    resetAll,
+  ]);
+
   return (
-    <FinanceContext.Provider value={{
-      state, metrics, addTransaction, updateTransaction, deleteTransaction,
-      addGoal, contributeGoal, withdrawGoal, addRecurring, updateRecurring, deleteRecurring,
-      toggleRecurringPause, advanceSim, resetAll,
-    }}>
+    <FinanceContext.Provider value={contextValue}>
       {children}
     </FinanceContext.Provider>
   );

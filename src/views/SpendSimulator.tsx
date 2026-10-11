@@ -114,7 +114,10 @@ export function SpendSimulator() {
   ];
 
   const savingsFeasible = hypoMetrics.projectedDay30 >= 0;
-  const commitmentCovered = hypoMetrics.availableCash >= 0;
+  const hypoUpcomingExpenses = hypoMetrics.upcomingCommitments
+    .filter(c => c.amount > 0)
+    .reduce((total, c) => total + c.amount, 0);
+  const commitmentCovered = hypoUpcomingExpenses === 0 || hypoMetrics.availableCash >= hypoUpcomingExpenses;
 
   return (
     <div className="space-y-4">

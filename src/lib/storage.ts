@@ -22,31 +22,48 @@ export function loadState(): FinanceState | null {
       : 1;
 
     const transactions = Array.isArray(parsed.transactions)
-      ? parsed.transactions.filter((t: unknown): t is FinanceState['transactions'][number] => {
-          return Boolean(
-            t &&
-            typeof t === 'object' &&
-            typeof (t as { id?: unknown }).id === 'string' &&
-            ((t as { type?: unknown }).type === 'income' || (t as { type?: unknown }).type === 'expense') &&
-            typeof (t as { amount?: unknown }).amount === 'number' &&
-            Number.isFinite((t as { amount: number }).amount) &&
-            typeof (t as { day?: unknown }).day === 'number'
-          );
-        })
+      ? parsed.transactions
+          .filter((t: unknown): t is FinanceState['transactions'][number] => {
+            return Boolean(
+              t &&
+              typeof t === 'object' &&
+              typeof (t as { id?: unknown }).id === 'string' &&
+              ((t as { type?: unknown }).type === 'income' || (t as { type?: unknown }).type === 'expense') &&
+              typeof (t as { amount?: unknown }).amount === 'number' &&
+              Number.isFinite((t as { amount: number }).amount) &&
+              typeof (t as { day?: unknown }).day === 'number' &&
+              Number.isFinite((t as { day: number }).day)
+            );
+          })
+          .map((t: FinanceState['transactions'][number]) => ({
+            ...t,
+            description: typeof t.description === 'string' && t.description.trim() ? t.description.trim() : 'Transaction',
+          }))
       : [];
 
     const goals = Array.isArray(parsed.goals)
-      ? parsed.goals.filter((g: unknown): g is FinanceState['goals'][number] => {
-          return Boolean(
-            g &&
-            typeof g === 'object' &&
-            typeof (g as { id?: unknown }).id === 'string' &&
-            typeof (g as { name?: unknown }).name === 'string' &&
-            typeof (g as { target?: unknown }).target === 'number' &&
-            typeof (g as { saved?: unknown }).saved === 'number' &&
-            typeof (g as { dueDay?: unknown }).dueDay === 'number'
-          );
-        })
+      ? parsed.goals
+          .filter((g: unknown): g is FinanceState['goals'][number] => {
+            return Boolean(
+              g &&
+              typeof g === 'object' &&
+              typeof (g as { id?: unknown }).id === 'string' &&
+              typeof (g as { name?: unknown }).name === 'string' &&
+              typeof (g as { target?: unknown }).target === 'number' &&
+              Number.isFinite((g as { target: number }).target) &&
+              typeof (g as { saved?: unknown }).saved === 'number' &&
+              Number.isFinite((g as { saved: number }).saved) &&
+              typeof (g as { dueDay?: unknown }).dueDay === 'number' &&
+              Number.isFinite((g as { dueDay: number }).dueDay)
+            );
+          })
+          .map((g: FinanceState['goals'][number]) => ({
+            ...g,
+            name: g.name.trim() || 'Goal',
+            target: Math.max(0, g.target),
+            saved: Math.max(0, g.saved),
+            paused: Boolean(g.paused),
+          }))
       : [];
 
     const recurring = Array.isArray(parsed.recurring)
@@ -58,12 +75,16 @@ export function loadState(): FinanceState | null {
               typeof (r as { id?: unknown }).id === 'string' &&
               typeof (r as { name?: unknown }).name === 'string' &&
               typeof (r as { amount?: unknown }).amount === 'number' &&
-              typeof (r as { dueDay?: unknown }).dueDay === 'number'
+              Number.isFinite((r as { amount: number }).amount) &&
+              typeof (r as { dueDay?: unknown }).dueDay === 'number' &&
+              Number.isFinite((r as { dueDay: number }).dueDay)
             );
           })
           .map((r: FinanceState['recurring'][number]) => ({
             ...r,
-            processedDays: Array.isArray(r.processedDays) ? r.processedDays : [],
+            name: r.name.trim() || 'Recurring Bill',
+            amount: Math.max(0, r.amount),
+            processedDays: Array.isArray(r.processedDays) ? r.processedDays.filter(d => typeof d === 'number') : [],
             paused: Boolean(r.paused),
           }))
       : [];

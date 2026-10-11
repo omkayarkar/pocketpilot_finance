@@ -29,6 +29,14 @@ interface LayoutProps {
 export function Layout({ current, onNavigate, children, currentDay, totalDays }: LayoutProps) {
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col md:flex-row">
+      {/* Skip to main content link for keyboard accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2 focus:bg-lime-400 focus:text-slate-900 focus:font-semibold focus:rounded-lg focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
+
       {/* Mobile top bar */}
       <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/50">
         <div className="flex items-center gap-2">
@@ -44,7 +52,7 @@ export function Layout({ current, onNavigate, children, currentDay, totalDays }:
           <Wallet size={22} className="text-lime-400" />
           <div>
             <div className="font-bold text-lg leading-tight">PocketPilot</div>
-            <div className="text-[10px] text-slate-500">Know the impact before you spend</div>
+            <div className="text-[10px] text-slate-400">Know the impact before you spend</div>
           </div>
         </div>
         <div className="flex md:flex-col gap-1 p-2 md:p-3 overflow-x-auto md:overflow-x-visible">
@@ -65,12 +73,12 @@ export function Layout({ current, onNavigate, children, currentDay, totalDays }:
           ))}
         </div>
         <div className="hidden md:block mt-auto p-3">
-          <div className="text-xs text-slate-500 px-3 py-2">Day {currentDay} of {totalDays}</div>
+          <div className="text-xs text-slate-400 px-3 py-2">Day {currentDay} of {totalDays}</div>
         </div>
       </nav>
 
       {/* Main content */}
-      <main className="flex-1 p-4 md:p-6 md:overflow-y-auto">
+      <main id="main-content" tabIndex={-1} className="flex-1 p-4 md:p-6 md:overflow-y-auto focus:outline-none">
         <div className="max-w-5xl mx-auto">
           {children}
         </div>

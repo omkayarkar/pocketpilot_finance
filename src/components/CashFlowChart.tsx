@@ -38,11 +38,12 @@ export function CashFlowChart({ data, currentDay }: { data: DataPoint[]; current
   return (
     <svg
       role="img"
-      aria-label="30-day cash flow forecast chart"
+      aria-labelledby="cashflow-chart-title"
       viewBox={`0 0 ${width} ${height}`}
       className="w-full h-32"
       preserveAspectRatio="none"
     >
+      <title id="cashflow-chart-title">30-day cash flow forecast chart</title>
       <defs>
         <linearGradient id="cashFlowGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgb(163 230 53)" stopOpacity="0.3" />

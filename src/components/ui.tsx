@@ -73,8 +73,13 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
         onClose();
       }
     };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -155,6 +160,6 @@ export function ProgressBar({ value, label, className = '' }: { value: number; l
 
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="text-center py-8 text-slate-500 text-sm">{message}</div>
+    <div className="text-center py-8 text-slate-400 text-sm">{message}</div>
   );
 }

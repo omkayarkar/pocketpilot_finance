@@ -91,10 +91,10 @@ export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-slate-300">30-Day Cash Flow</span>
-            <span className="text-xs text-slate-500">Forecast</span>
+            <span className="text-xs text-slate-400">Forecast</span>
           </div>
           <CashFlowChart data={cashFlow} currentDay={state.currentDay} />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
             <span>Day 1</span>
             <span>Day {state.totalDays}</span>
           </div>
@@ -107,14 +107,14 @@ export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         <Card>
           <div className="text-sm font-medium text-slate-300 mb-3">Upcoming Commitments</div>
           {metrics.upcomingCommitments.length === 0 ? (
-            <p className="text-xs text-slate-500">No upcoming commitments</p>
+            <p className="text-xs text-slate-400">No upcoming commitments</p>
           ) : (
             <div className="space-y-2">
               {metrics.upcomingCommitments.slice(0, 5).map((c, i) => (
                 <div key={i} className="flex items-center justify-between text-sm">
                   <div>
                     <div className="text-slate-200">{c.name}</div>
-                    <div className="text-xs text-slate-500">{formatDay(c.day)}</div>
+                    <div className="text-xs text-slate-400">{formatDay(c.day)}</div>
                   </div>
                   <span className={c.amount < 0 ? 'text-lime-400' : 'text-slate-300'}>
                     {c.amount < 0 ? `+${formatINR(Math.abs(c.amount))}` : formatINR(c.amount)}
@@ -132,7 +132,7 @@ export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
             <Button variant="ghost" size="sm" onClick={() => onNavigate('savings')}>Manage</Button>
           </div>
           {metrics.savingsProgress.length === 0 ? (
-            <p className="text-xs text-slate-500">No goals set</p>
+            <p className="text-xs text-slate-400">No goals set</p>
           ) : (
             <div className="space-y-3">
               {metrics.savingsProgress.map(s => (
@@ -155,7 +155,7 @@ export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
             <Button variant="ghost" size="sm" onClick={() => onNavigate('transactions')}>View All</Button>
           </div>
           {metrics.recentTransactions.length === 0 ? (
-            <p className="text-xs text-slate-500">No transactions yet</p>
+            <p className="text-xs text-slate-400">No transactions yet</p>
           ) : (
             <div className="space-y-2">
               {metrics.recentTransactions.map(t => (
@@ -164,11 +164,11 @@ export function Overview({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
                     {t.type === 'income' ? (
                       <TrendingUp size={14} className="text-lime-400 shrink-0" />
                     ) : (
-                      <TrendingDown size={14} className="text-slate-500 shrink-0" />
+                      <TrendingDown size={14} className="text-slate-400 shrink-0" />
                     )}
                     <div className="min-w-0">
                       <div className="text-slate-200 truncate">{t.description}</div>
-                      <div className="text-xs text-slate-500">{CATEGORY_LABELS[t.category] || t.category} — {formatDay(t.day)}</div>
+                      <div className="text-xs text-slate-400">{CATEGORY_LABELS[t.category] || t.category} — {formatDay(t.day)}</div>
                     </div>
                   </div>
                   <span className={t.type === 'income' ? 'text-lime-400' : 'text-slate-300'}>{formatINR(t.amount)}</span>

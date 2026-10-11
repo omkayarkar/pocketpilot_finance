@@ -37,7 +37,7 @@ export function SpendSimulator() {
 
   const explanation = useMemo(() => {
     if (amtNum <= 0) return 'Enter an amount to see impact.';
-    return explainImpact(metrics, hypoMetrics, amtNum, affordability.affordable);
+    return explainImpact(metrics, hypoMetrics, amtNum, affordability.affordable, affordability.reason);
   }, [amtNum, metrics, hypoMetrics, affordability]);
 
   const handleConfigChange = () => {

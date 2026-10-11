@@ -199,3 +199,48 @@ test('formatINR formats currency properly with symbol and negative signs', () =>
   assert.equal(formatINR(0), '\u20B90');
   assert.equal(formatINR(-500), '-\u20B9500');
 });
+
+test('canAfford rejects future expense that causes intermediate cash deficit before future income', () => {
+  const state = createMockState();
+  // State has 9330 available cash on Day 1. Freelance income (+5000) arrives on Day 10.
+  // Music (299) is due on Day 5. Balance on Day 5 before income is ~9031.
+  // An expense of 10000 on Day 6 would dip intermediate cash flow into deficit (-969) before freelance income on Day 10,
+  // even though Day 30 projected balance would still be positive (11032 - 10000 = +1032).
+  const result = canAfford(state, 10000, 6);
+  assert.equal(result.affordable, false);
+  assert.match(result.reason ?? '', /deficit/);
+});
+
+test('advanceDays processes overdue payments due on day 1 or past days', () => {
+  const state = createMockState();
+  state.recurring.push({
+    id: 'r3',
+    name: 'Day 1 Bill',
+    amount: 100,
+    category: 'other',
+    dueDay: 1,
+    paused: false,
+    processedDays: [],
+  });
+
+  // Advancing by 1 day should process the Day 1 bill
+  const advanced = advanceDays(state, 1);
+  const found = advanced.transactions.find(t => t.description === 'Day 1 Bill');
+  assert.ok(found);
+  assert.equal(found.amount, 100);
+  assert.equal(found.day, 1);
+});
+
+test('getCashFlowSeries matches Available Cash and Projected Day 30 across simulation advancement', () => {
+  const state = createMockState();
+  // Advance to Day 26 (past Day 25 goal deadline and recurring payments)
+  const advanced = advanceDays(state, 25);
+  assert.equal(advanced.currentDay, 26);
+
+  const series = getCashFlowSeries(advanced);
+  // Chart balance at currentDay (Day 26) must match getAvailableCash exactly
+  assert.equal(series[advanced.currentDay - 1].balance, getAvailableCash(advanced));
+  // Chart balance at Day 30 must match getProjectedDay30 exactly
+  assert.equal(series[29].balance, getProjectedDay30(advanced));
+});
+

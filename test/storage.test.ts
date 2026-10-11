@@ -71,3 +71,31 @@ test('loadState correctly loads well-formed state', () => {
   clearState();
   assert.equal(loadState(), null);
 });
+
+test('loadState provides fallback description and rejects NaN amounts', () => {
+  storageMap.clear();
+  storageMap.set('pocketpilot_state_v1', JSON.stringify({
+    startingFunds: 10000,
+    currentDay: 1,
+    totalDays: 30,
+    transactions: [
+      { id: 't1', type: 'expense', amount: 50, day: 1 }, // missing description
+      { id: 't2', type: 'expense', amount: NaN, day: 2, description: 'Bad amount' }, // NaN amount
+    ],
+    goals: [
+      { id: 'g1', name: 'Valid Goal', target: 2000, saved: 0, dueDay: 10 },
+      { id: 'g2', name: 'Bad Target', target: Infinity, saved: 0, dueDay: 15 },
+    ],
+    recurring: [],
+  }));
+
+  const loaded = loadState();
+  assert.ok(loaded);
+  // t1 is kept with fallback description; t2 with NaN amount is rejected
+  assert.equal(loaded.transactions.length, 1);
+  assert.equal(loaded.transactions[0].description, 'Transaction');
+  // g1 is kept; g2 with Infinity target is rejected
+  assert.equal(loaded.goals.length, 1);
+  assert.equal(loaded.goals[0].name, 'Valid Goal');
+});
+

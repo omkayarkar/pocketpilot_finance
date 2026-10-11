@@ -250,9 +250,9 @@ export function getCashFlowSeries(state: FinanceState): { day: number; balance: 
         balance -= r.amount;
       }
     }
-    // Process remaining savings allocations at due day for each goal
+    // Process remaining savings allocations at due day for each goal (future goals only)
     for (const g of state.goals) {
-      if (!g.paused && g.dueDay === day) {
+      if (!g.paused && g.dueDay > state.currentDay && g.dueDay === day) {
         const remaining = Math.max(0, g.target - g.saved);
         if (remaining > 0) {
           balance -= remaining;
@@ -316,6 +316,16 @@ export function canAfford(state: FinanceState, amount: number, day: number): { a
     };
   }
 
+  // Also verify that cash flow never dips into deficit at or after the expense day
+  const hypoSeries = getCashFlowSeries(hypothetical);
+  const firstDeficit = hypoSeries.find(p => p.day >= day && p.balance < 0);
+  if (firstDeficit) {
+    return {
+      affordable: false,
+      reason: `This would cause a cash deficit of \u20B9${Math.abs(firstDeficit.balance).toLocaleString('en-IN')} on Day ${firstDeficit.day} before subsequent income arrives`,
+    };
+  }
+
   return { affordable: true };
 }
 
@@ -326,10 +336,11 @@ export function explainImpact(
   current: Metrics,
   hypothetical: Metrics,
   amount: number,
-  affordable: boolean
+  affordable: boolean,
+  reason?: string
 ): string {
   if (!affordable) {
-    return 'This purchase is unaffordable. Applying it would create a shortfall in your budget.';
+    return reason ? `${reason}.` : 'This purchase is unaffordable. Applying it would create a shortfall in your budget.';
   }
 
   const cashDelta = hypothetical.availableCash - current.availableCash;
@@ -384,8 +395,8 @@ export function advanceDays(state: FinanceState, days: number): FinanceState {
   for (const r of state.recurring) {
     const processedDays = [...r.processedDays];
     if (!r.paused) {
-      // Check if any due days fall between currentDay+1 and newDay
-      if (r.dueDay > state.currentDay && r.dueDay <= newDay && !processedDays.includes(r.dueDay)) {
+      // Check if any due days fall on or before newDay and haven't been processed yet
+      if (r.dueDay <= newDay && !processedDays.includes(r.dueDay)) {
         // Process this payment
         newTransactions.push({
           id: Math.random().toString(36).slice(2) + Date.now().toString(36),

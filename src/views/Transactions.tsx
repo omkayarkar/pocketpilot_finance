@@ -167,9 +167,9 @@ function EditTransactionModal({ txn, onClose, onSave }: {
   return (
     <Modal open={true} onClose={onClose} title="Edit Transaction">
       <form onSubmit={handleSave} className="space-y-3">
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${type === 'expense' ? 'bg-slate-700 text-white' : 'bg-slate-900/40 text-slate-400'}`}>Expense</button>
-          <button type="button" onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${type === 'income' ? 'bg-lime-400/15 text-lime-300 border border-lime-400/30' : 'bg-slate-900/40 text-slate-400'}`}>Income</button>
+        <div className="flex gap-2" role="group" aria-label="Transaction type">
+          <button type="button" aria-pressed={type === 'expense'} onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${type === 'expense' ? 'bg-slate-700 text-white' : 'bg-slate-900/40 text-slate-400'}`}>Expense</button>
+          <button type="button" aria-pressed={type === 'income'} onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg text-sm font-medium ${type === 'income' ? 'bg-lime-400/15 text-lime-300 border border-lime-400/30' : 'bg-slate-900/40 text-slate-400'}`}>Income</button>
         </div>
         <Input label="Amount" type="number" value={amount} onChange={e => setAmount(e.target.value)} error={error || undefined} />
         <Input label="Description" value={description} onChange={e => setDescription(e.target.value)} />

@@ -50,7 +50,7 @@ export function FinancialHealth() {
             value={h.total}
             className={h.band === 'Healthy' ? '[&>div]:bg-lime-400' : h.band === 'Caution' ? '[&>div]:bg-amber-500' : '[&>div]:bg-red-500'}
           />
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+          <div className="flex justify-between text-[10px] text-slate-400 mt-1">
             <span>Critical (0-44)</span>
             <span>Caution (45-74)</span>
             <span>Healthy (75-100)</span>
@@ -65,11 +65,11 @@ export function FinancialHealth() {
             <div className="flex items-center justify-between mb-2">
               <div>
                 <div className="text-sm font-medium text-white">{f.name}</div>
-                <div className="text-xs text-slate-500">Weight: {f.weight}</div>
+                <div className="text-xs text-slate-400">Weight: {f.weight}</div>
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold text-slate-200">{f.score}</span>
-                <span className="text-sm text-slate-500">/100</span>
+                <span className="text-sm text-slate-400">/100</span>
               </div>
             </div>
             <ProgressBar
@@ -99,7 +99,7 @@ export function FinancialHealth() {
           </div>
         </div>
         <div className="mt-4 pt-3 border-t border-slate-700/40">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             This score is a budgeting indicator based on your simulated financial state. It is not a credit score and should not be used for financial decisions beyond this app.
           </p>
         </div>

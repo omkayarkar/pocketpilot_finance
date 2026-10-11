@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFinance } from '@/context/useFinance';
 import { Modal, Button, Input, Select } from '@/components/ui';
 import { CATEGORY_LABELS } from '@/lib/defaultData';
@@ -13,6 +13,14 @@ export function AddTransactionModal({ open, onClose }: { open: boolean; onClose:
   const [day, setDay] = useState(String(state.currentDay));
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setDay(String(state.currentDay));
+      setError('');
+      setSuccess('');
+    }
+  }, [open, state.currentDay]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +67,10 @@ export function AddTransactionModal({ open, onClose }: { open: boolean; onClose:
   return (
     <Modal open={open} onClose={onClose} title="Add Transaction">
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="group" aria-label="Transaction type">
           <button
             type="button"
+            aria-pressed={type === 'expense'}
             onClick={() => setType('expense')}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'expense' ? 'bg-slate-700 text-white' : 'bg-slate-900/40 text-slate-400'}`}
           >
@@ -69,6 +78,7 @@ export function AddTransactionModal({ open, onClose }: { open: boolean; onClose:
           </button>
           <button
             type="button"
+            aria-pressed={type === 'income'}
             onClick={() => setType('income')}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${type === 'income' ? 'bg-lime-400/15 text-lime-300 border border-lime-400/30' : 'bg-slate-900/40 text-slate-400'}`}
           >
